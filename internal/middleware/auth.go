@@ -5,9 +5,10 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rideqwik/api/internal/services"
 )
 
-func AuthMiddleware() gin.HandlerFunc {
+func AuthMiddleware(authService *services.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 
@@ -32,15 +33,17 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		token := parts[1]
 
-		if token == "" {
+		userID, err := authService.ValidateToken(token)
+		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
-				"error":   "Invalid token",
+				"error":   "Invalid or expired token",
 			})
 			c.Abort()
 			return
 		}
 
+		c.Set("userID", userID)
 		c.Next()
 	}
 }
